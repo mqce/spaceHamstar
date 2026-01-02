@@ -1,0 +1,126 @@
+# PlatformIO
+.pio/
+.vscode/
+.idea/
+
+# Build artifacts
+*.o
+*.a
+*.elf
+*.hex
+*.bin
+*.map
+*.lst
+
+# Compiled Object files
+*.slo
+*.lo
+*.obj
+
+# Preprocessor output
+*.i
+*.ii
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+*.dll
+
+# Shared objects (inc. Windows DLLs)
+*.dylib
+*.so
+*.so.*
+*.dll
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# IDE - CLion
+.idea/
+cmake-build-*/
+
+# IDE - Visual Studio
+.vs/
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# OS - Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# OS - macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# OS - Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+*.bak
+*.cache
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+
+# Test coverage
+coverage/
+*.gcov
+*.gcda
+*.gcno
+
+.history
