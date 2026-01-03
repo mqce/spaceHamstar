@@ -48,51 +48,51 @@ static const uint8_t _hidReportDescriptor[] PROGMEM = {
 #define NUM_AXES 6
 
 // Axis indices for motion vector array
-#define AXIS_TRANSLATION_X 0
-#define AXIS_TRANSLATION_Y 1
-#define AXIS_TRANSLATION_Z 2
-#define AXIS_ROTATION_Y 3
-#define AXIS_ROTATION_X 4
-#define AXIS_ROTATION_Z 5
+#define AXIS_TX 0
+#define AXIS_TY 1
+#define AXIS_TZ 2
+#define AXIS_RY 3
+#define AXIS_RX 4
+#define AXIS_RZ 5
 
 /// hardware 
-#define DEAD_THRESH 2 // Deadzone for ignoring small movement
-#define SPEED_PARAM 40 // larger is slower
+#define DEAD_THRESH 10 // Deadzone for ignoring small movement
+#define TRANSLATION_SPEED 10 // Sensitivity for translation (higher is faster)
+#define ROTATION_SPEED    10 // Sensitivity for rotation (higher is faster)
 
-// Joystick A ports (for 2D movement: translation X, translation Y)
-#define JOYSTICK_A_X_PORT A0  // translation X
-#define JOYSTICK_A_Y_PORT A1  // translation Y
-
-int joystick_a_origin[2]; // initial sensor values for joystick A (x, y)
+// Joystick A ports (for Pan operation: translation X, translation Y)
+#define PIN_TX A0  // translation X
+#define PIN_TY A1  // translation Y
+#define PIN_RX A8  // rotation X
+#define PIN_RY A9  // rotation Y
 
 void setup() {
   static HIDSubDescriptor node(_hidReportDescriptor, sizeof(_hidReportDescriptor));
   HID().AppendDescriptor(&node);
-
-  // Initialize origin values for joystick A (A0, A1)
-  joystick_a_origin[0] = analogRead(JOYSTICK_A_X_PORT); // translation X
-  joystick_a_origin[1] = analogRead(JOYSTICK_A_Y_PORT); // translation Y
 }
 
-void send_command(int16_t rotation_x, int16_t rotation_y, int16_t rotation_z, 
-                  int16_t translation_x, int16_t translation_y, int16_t translation_z) {
+void send_command(int16_t rx, int16_t ry, int16_t rz, 
+                  int16_t tx, int16_t ty, int16_t tz) {
   uint8_t translation_data[6] = { 
-    translation_x & 0xFF, translation_x >> 8,
-    translation_z & 0xFF, translation_z >> 8,
-    translation_y & 0xFF, translation_y >> 8
+    tx & 0xFF, tx >> 8,
+    tz & 0xFF, tz >> 8,
+    ty & 0xFF, ty >> 8
   };
   HID().SendReport(1, translation_data, 6);
   
-  uint8_t rotation_data[6] = { 
-    rotation_x & 0xFF, rotation_x >> 8, 
-    rotation_y & 0xFF, rotation_y >> 8, 
-    rotation_z & 0xFF, rotation_z >> 8 
+  uint8_t rotation_data[6] = {
+    ry & 0xFF, ry >> 8,
+    rz & 0xFF, rz >> 8,
+    rx & 0xFF, rx >> 8
   };
   HID().SendReport(2, rotation_data, 6);
 }
 
-int apply_deadzone_and_limit(int raw_value) {
-  int processed_value = raw_value / SPEED_PARAM;
+int process(int raw_value, int speed) {
+  raw_value = raw_value - 512;
+
+  // Apply speed (integrated multiplier where higher is faster)
+  int processed_value = (long)raw_value * speed / 100;
   
   // Apply deadzone
   if((processed_value > -DEAD_THRESH) && (processed_value < DEAD_THRESH)){
@@ -110,36 +110,26 @@ int apply_deadzone_and_limit(int raw_value) {
 }
 
 void loop() {
-  int motion_vector[NUM_AXES]; // (translation_x, translation_y, translation_z, rotation_y, rotation_x, rotation_z)
-  
-  // Read joystick A values and calculate translation X and Y
-  int sensor_value_x = analogRead(JOYSTICK_A_X_PORT) - joystick_a_origin[0];
-  int sensor_value_y = analogRead(JOYSTICK_A_Y_PORT) - joystick_a_origin[1];
-  
-  // Calculate translation X (movement in X direction)
-  motion_vector[AXIS_TRANSLATION_X] = apply_deadzone_and_limit(sensor_value_x);
-  
-  // Calculate translation Y (movement in Y direction)
-  motion_vector[AXIS_TRANSLATION_Y] = apply_deadzone_and_limit(sensor_value_y);
-  
-  // Set other axes to 0 (translation_z, rotation_x, rotation_y, rotation_z)
-  motion_vector[AXIS_TRANSLATION_Z] = 0;
-  motion_vector[AXIS_ROTATION_X] = 0;
-  motion_vector[AXIS_ROTATION_Y] = 0;
-  motion_vector[AXIS_ROTATION_Z] = 0;
+  int tx = process(analogRead(PIN_TX), TRANSLATION_SPEED);
+  int ty = process(analogRead(PIN_TY), TRANSLATION_SPEED);
 
-  // Check if there's any movement
-  bool has_movement = (motion_vector[AXIS_TRANSLATION_X] != 0 || 
-                       motion_vector[AXIS_TRANSLATION_Y] != 0);
+  int rx = process(analogRead(PIN_RX), ROTATION_SPEED);
+  int ry = process(analogRead(PIN_RY), ROTATION_SPEED);
+
+  // Serial.print(    "rx: " + String(analogRead(PIN_RX)) + ", ry: " + String(analogRead(PIN_RY)));
+  // Serial.println(", tx: " + String(analogRead(PIN_TX)) + ", ty: " + String(analogRead(PIN_TY)));
+  
+  // Calculate rotation X and Y
+  bool has_movement = (tx != 0 || ty != 0 || rx != 0 || ry != 0);
 
   if(has_movement){
     send_command(
-      motion_vector[AXIS_ROTATION_X], 
-      -motion_vector[AXIS_ROTATION_Y], 
-      -motion_vector[AXIS_ROTATION_Z], 
-      motion_vector[AXIS_TRANSLATION_X], 
-      motion_vector[AXIS_TRANSLATION_Y], 
-      motion_vector[AXIS_TRANSLATION_Z]
+      -rx, 
+      ry, 
+      0, 
+      tx, 
+      ty, 
+      0
     );
   }
 }
